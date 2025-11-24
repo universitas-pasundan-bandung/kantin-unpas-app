@@ -5,13 +5,14 @@ import { useRouter, useParams } from 'next/navigation';
 import Header from '@/components/Header';
 import GoogleDriveConnect from '@/components/GoogleDriveConnect';
 import { storage } from '@/lib/storage';
-import { getAccessToken } from '@/lib/googleAuth';
+import { getAccessToken, checkAuthStatus } from '@/lib/googleAuth';
 import { CartItem } from '@/types';
 import { formatCurrency, generateTransactionCode } from '@/lib/utils';
 import { showAlert } from '@/lib/swal';
 import Link from 'next/link';
 import { KantinAccount } from '@/lib/kantin';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import Image from 'next/image';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -34,10 +35,13 @@ export default function CheckoutPage() {
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
   const [kantin, setKantin] = useState<KantinAccount | null>(null);
   const [isLoadingKantin, setIsLoadingKantin] = useState(true);
-  const [qrisImageError, setQrisImageError] = useState(false);
-  const [qrisImageSrc, setQrisImageSrc] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerName, setCustomerName] = useState<string>('');
+  const [isGoogleDriveConnected, setIsGoogleDriveConnected] = useState(false);
+  const [deliveryLocation, setDeliveryLocation] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    return storage.deliveryLocation.get();
+  });
 
   useEffect(() => {
     const loadKantin = async () => {
@@ -56,11 +60,6 @@ export default function CheckoutPage() {
           console.log('qrisImage:', result.data.qrisImage);
           setKantin(result.data);
           
-          // Set initial QRIS image source
-          if (result.data.qrisImage) {
-            setQrisImageSrc(result.data.qrisImage);
-            setQrisImageError(false);
-          }
         } else {
           showAlert.error(result.error || 'Gagal memuat data kantin');
           router.push('/kantin');
@@ -75,9 +74,26 @@ export default function CheckoutPage() {
     };
 
     loadKantin();
+    
+    // Check Google Drive connection status
+    const checkGoogleDriveStatus = async () => {
+      const connected = await checkAuthStatus();
+      setIsGoogleDriveConnected(connected);
+    };
+    checkGoogleDriveStatus();
   }, [kantinId, router]);
 
-  const total = Object.values(cart).reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = Object.values(cart).reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const deliveryFee = deliveryLocation ? 1000 : 0;
+  const total = subtotal + deliveryFee;
+
+  const handleRemoveDelivery = async () => {
+    const result = await showAlert.confirm('Yakin ingin menghapus layanan pengantaran?', 'Konfirmasi', 'Ya, Hapus', 'Batal');
+    if (result.isConfirmed) {
+      storage.deliveryLocation.clear();
+      setDeliveryLocation(null);
+    }
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -153,8 +169,7 @@ export default function CheckoutPage() {
       const now = new Date();
       const transactionId = `txn-${now.getTime()}`;
       
-      // Get delivery location
-      const deliveryLocation = storage.deliveryLocation.get();
+      // Use delivery location from state
 
       const transaction = {
         id: transactionId,
@@ -263,7 +278,7 @@ export default function CheckoutPage() {
                 />
               </div>
               
-              {storage.deliveryLocation.get() && (
+              {deliveryLocation && (
                 <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <div className="flex items-start gap-2">
                     <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -273,14 +288,25 @@ export default function CheckoutPage() {
                     <div className="flex-1">
                       <p className="text-sm font-medium text-blue-800 mb-1">Lokasi Pengiriman</p>
                       <p className="text-base font-semibold text-gray-800">
-                        {storage.deliveryLocation.get()?.name} - {storage.deliveryLocation.get()?.tableNumber}
+                        {deliveryLocation.name} - {deliveryLocation.tableNumber}
                       </p>
+                      <p className="text-xs text-gray-600 mt-1">Biaya pengantaran: Rp 1.000</p>
                     </div>
+                    <button
+                      onClick={handleRemoveDelivery}
+                      className="flex-shrink-0 text-red-600 hover:text-red-700 p-1"
+                      title="Hapus pengantaran"
+                      aria-label="Hapus pengantaran"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
               )}
               
-              {!storage.deliveryLocation.get() && (
+              {!deliveryLocation && (
                 <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-green-50 border border-green-200 rounded-lg">
                   <div className="flex items-start gap-2">
                     <svg className="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -289,7 +315,7 @@ export default function CheckoutPage() {
                     <div className="flex-1">
                       <p className="text-sm font-medium text-green-800 mb-1">Take Away</p>
                       <p className="text-sm text-green-700">
-                        Pesanan akan diambil langsung di lokasi kantin. Silakan scan QR code di halaman beranda jika ingin pesanan diantarkan ke meja Anda.
+                        Pesanan akan diambil langsung di lokasi kantin. Scan QR code di meja jika ingin pesanan diantarkan (+Rp 1.000).
                       </p>
                     </div>
                   </div>
@@ -310,6 +336,18 @@ export default function CheckoutPage() {
                   </div>
                 ))}
               </div>
+              {deliveryFee > 0 && (
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <span className="text-sm text-gray-600">Subtotal</span>
+                  <span className="text-sm font-medium text-gray-800">{formatCurrency(subtotal)}</span>
+                </div>
+              )}
+              {deliveryFee > 0 && (
+                <div className="flex items-center justify-between pt-2">
+                  <span className="text-sm text-gray-600">Biaya Pengantaran</span>
+                  <span className="text-sm font-medium text-gray-800">{formatCurrency(deliveryFee)}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between pt-3 sm:pt-4 border-t">
                 <span className="text-base sm:text-lg font-semibold text-gray-800">Total</span>
                 <span className="text-xl sm:text-2xl font-bold text-unpas-blue">{formatCurrency(total)}</span>
@@ -325,39 +363,16 @@ export default function CheckoutPage() {
                   <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-2 sm:mb-3">Scan QRIS untuk Pembayaran</h3>
                   <div className="flex justify-center">
                     <div className="relative w-full max-w-xs aspect-square">
-                      {qrisImageSrc && !qrisImageError ? (
-                        <img
-                          src={qrisImageSrc}
-                          alt="QRIS Pembayaran"
-                          className="w-full h-full object-contain rounded-lg"
-                          onError={() => {
-                            console.error('Error loading QRIS image:', qrisImageSrc);
-                            
-                            // Try alternative URL format
-                            const idMatch = kantin.qrisImage?.match(/[\/=]([a-zA-Z0-9_-]{25,})/);
-                            if (idMatch && qrisImageSrc !== `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w1000`) {
-                              const altUrl = `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w1000`;
-                              console.log('Trying alternative QRIS URL format:', altUrl);
-                              setQrisImageSrc(altUrl);
-                              setQrisImageError(false);
-                            } else {
-                              setQrisImageError(true);
-                            }
-                          }}
-                          onLoad={() => {
-                            console.log('QRIS image loaded successfully');
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-lg">
-                          <div className="text-center">
-                            <svg className="w-16 h-16 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <p className="text-sm text-gray-500">Gambar QRIS tidak dapat dimuat</p>
-                          </div>
-                        </div>
-                      )}
+                      <Image
+                        src={kantin.qrisImage}
+                        alt="QRIS Pembayaran"
+                        fill
+                        className="object-contain rounded-lg"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 60vw"
+                        onError={(e) => {
+                          console.error('Error loading QRIS image:', kantin.qrisImage);
+                        }}
+                      />
                     </div>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 mt-3 items-center">
@@ -404,7 +419,10 @@ export default function CheckoutPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Koneksi Google Drive
                   </label>
-                  <GoogleDriveConnect />
+                  <GoogleDriveConnect 
+                    onConnected={() => setIsGoogleDriveConnected(true)}
+                    onDisconnected={() => setIsGoogleDriveConnected(false)}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -416,17 +434,19 @@ export default function CheckoutPage() {
                     onChange={handleFileChange}
                     id="payment-proof-upload"
                     className="hidden"
-                    disabled={isUploading}
+                    disabled={isUploading || !isGoogleDriveConnected}
                   />
                   <label
                     htmlFor="payment-proof-upload"
-                    className={`relative flex items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                      isUploading
+                    className={`relative flex items-center justify-center w-full h-48 border-2 border-dashed rounded-lg transition-colors ${
+                      !isGoogleDriveConnected
+                        ? 'border-gray-200 bg-gray-100 cursor-not-allowed opacity-60'
+                        : isUploading
                         ? 'border-unpas-blue bg-unpas-blue/5 cursor-wait'
                         : uploadedFileUrl || paymentProofPreview
-                        ? 'border-green-500 bg-green-50'
-                        : 'border-gray-300 bg-gray-50 hover:border-unpas-blue hover:bg-unpas-blue/5'
-                    } ${isUploading ? 'pointer-events-none' : ''}`}
+                        ? 'border-green-500 bg-green-50 cursor-pointer'
+                        : 'border-gray-300 bg-gray-50 hover:border-unpas-blue hover:bg-unpas-blue/5 cursor-pointer'
+                    } ${isUploading || !isGoogleDriveConnected ? 'pointer-events-none' : ''}`}
                   >
                     {isUploading ? (
                       <div className="flex flex-col items-center gap-3">
@@ -441,9 +461,9 @@ export default function CheckoutPage() {
                         />
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center gap-2 text-gray-500">
+                      <div className="flex flex-col items-center gap-2 text-center px-4">
                         <svg
-                          className="w-12 h-12"
+                          className={`w-12 h-12 ${!isGoogleDriveConnected ? 'text-gray-400' : 'text-gray-500'}`}
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -455,8 +475,17 @@ export default function CheckoutPage() {
                             d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                           />
                         </svg>
-                        <p className="text-sm font-medium">Klik untuk upload bukti pembayaran</p>
-                        <p className="text-xs">File akan langsung diupload ke Google Drive</p>
+                        {!isGoogleDriveConnected ? (
+                          <>
+                            <p className="text-sm font-medium text-red-500">Hubungkan Google Drive terlebih dahulu</p>
+                            <p className="text-xs text-red-400">Perlu terhubung ke Google Drive untuk mengupload bukti pembayaran</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm font-medium text-gray-500">Klik untuk upload bukti pembayaran</p>
+                            <p className="text-xs text-gray-500">File akan langsung diupload ke Google Drive</p>
+                          </>
+                        )}
                       </div>
                     )}
                   </label>

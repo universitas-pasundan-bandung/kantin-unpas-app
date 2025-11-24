@@ -25,7 +25,7 @@ function RiwayatContent() {
     const { mockKantins } = require('@/lib/data');
     const allKantinsFromStorage = kantinStorage.getAll();
     const allKantinsList = [
-      ...mockKantins.map((k: any) => ({ id: k.id, name: k.name })),
+      // ...mockKantins.map((k: any) => ({ id: k.id, name: k.name })),
       ...allKantinsFromStorage.map((k: any) => ({ id: k.id, name: k.name }))
     ];
     setKantins(allKantinsList);

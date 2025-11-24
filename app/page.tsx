@@ -1,6 +1,7 @@
 import Header from '@/components/Header';
 import ScanQR from '@/components/ScanQR';
 import Link from 'next/link';
+import { FiPackage } from "react-icons/fi";
 
 export default function Home() {
   return (
@@ -13,15 +14,24 @@ export default function Home() {
               Selamat Datang di E-Kantin UNPAS
             </h1>
             <p className="text-base sm:text-lg text-gray-600">
-              Pesan makanan favoritmu dengan mudah dan cepat
+              Powered by <a href="https://kodingkeliling.com" target="_blank" rel="noopener noreferrer" className="text-unpas-blue hover:text-unpas-blue/80 hover:underline">Koding Keliling</a>.
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <ScanQR />
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-white rounded-lg shadow-md p-6 md:order-2">
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Cara Pesan</h2>
               <ol className="space-y-4">
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-8 h-8 bg-unpas-blue text-white rounded-full flex items-center justify-center font-bold">
+                    <FiPackage />
+                  </span>
+                  <div>
+                    <h3 className="font-semibold text-gray-800">Metode Pengambilan</h3>
+                    <p className="text-sm text-gray-600">Take Away: Ambil langsung di lokasi kantin</p>
+                    <p className="text-sm text-gray-600">Delivery: Scan QR code di meja untuk pesanan diantarkan (+Rp 1.000)</p>
+                  </div>
+                </li>
                 <li className="flex items-start gap-3">
                   <span className="flex-shrink-0 w-8 h-8 bg-unpas-blue text-white rounded-full flex items-center justify-center font-bold">
                     1
@@ -59,6 +69,9 @@ export default function Home() {
                   </div>
                 </li>
               </ol>
+            </div>
+            <div className="md:order-1">
+              <ScanQR />
             </div>
           </div>
 

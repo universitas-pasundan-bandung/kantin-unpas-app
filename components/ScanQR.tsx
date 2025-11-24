@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { storage } from '@/lib/storage';
 import { DeliveryLocation } from '@/types';
 import { showAlert } from '@/lib/swal';
@@ -20,11 +21,51 @@ const QR_LOCATIONS = [
 ];
 
 export default function ScanQR() {
+  const searchParams = useSearchParams();
   const [deliveryLocation, setDeliveryLocation] = useState<DeliveryLocation | null>(() => {
     if (typeof window === 'undefined') return null;
     return storage.deliveryLocation.get();
   });
   const [isScanning, setIsScanning] = useState(false);
+
+  // Handle query params "meja=" from URL
+  useEffect(() => {
+    const mejaParam = searchParams.get('meja');
+    if (mejaParam) {
+      // Parse meja parameter (format: "Gedung A - Meja 1" or similar)
+      const parts = mejaParam.split(' - ');
+      let name = 'Lokasi';
+      let tableNumber = mejaParam;
+      
+      if (parts.length >= 2) {
+        name = parts[0];
+        tableNumber = parts.slice(1).join(' - ');
+      } else {
+        // Try to extract name and table from single string
+        const match = mejaParam.match(/(.+?)\s+(Meja\s+\d+)/i);
+        if (match) {
+          name = match[1];
+          tableNumber = match[2];
+        } else {
+          tableNumber = mejaParam;
+        }
+      }
+
+      const location: DeliveryLocation = {
+        name: name.trim(),
+        tableNumber: tableNumber.trim(),
+        scannedAt: new Date().toISOString(),
+      };
+      
+      storage.deliveryLocation.save(location);
+      setDeliveryLocation(location);
+      
+      // Remove query param from URL without reload
+      const url = new URL(window.location.href);
+      url.searchParams.delete('meja');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams]);
 
   const handleScan = () => {
     setIsScanning(true);
@@ -84,13 +125,13 @@ export default function ScanQR() {
                 />
               </svg>
             </div>
-            <p className="text-gray-600 mb-4">Arahkan kamera ke QR Code</p>
-            <button
+            <p className="text-gray-600 mb-4">Arahkan kamera ke QR Code di wilayah kampus Unpas</p>
+            {/* <button
               onClick={handleScan}
               className="bg-unpas-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-unpas-blue/90 transition-colors text-sm sm:text-base min-h-[44px]"
             >
               Mulai Scan
-            </button>
+            </button> */}
           </div>
         )}
       </div>

@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
       console.warn('Failed to make file public, but upload succeeded');
     }
 
-    const fileUrl = `https://drive.google.com/uc?id=${response.id}`;
+    const fileUrl = `https://drive.google.com/uc?export=view&id=${response.id}`;
 
     return NextResponse.json({
       success: true,

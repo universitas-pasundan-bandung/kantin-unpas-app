@@ -105,7 +105,7 @@ export default function GoogleDriveConnect({ onConnected, onDisconnected }: Goog
           </>
         )}
       </button>
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-red-500">
         Perlu terhubung ke Google Drive untuk mengupload bukti pembayaran
       </p>
     </div>

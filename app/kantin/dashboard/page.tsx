@@ -141,15 +141,27 @@ function KantinDashboardContent() {
       
       if (menuData.length > 0) {
         // Parse data from spreadsheet
-        const parsedMenus = menuData.map((menu: any) => ({
-          id: menu.id || `menu-${Date.now()}-${Math.random().toString(36).substring(7)}`,
-          name: menu.name || '',
-          description: menu.description || '',
-          price: typeof menu.price === 'string' ? parseInt(menu.price) : (menu.price || 0),
-          available: menu.available === true || menu.available === 'true' || menu.available === 'TRUE',
-          image: menu.image || '',
-          quantity: menu.quantity ? (typeof menu.quantity === 'string' ? parseInt(menu.quantity) : menu.quantity) : undefined,
-        }));
+        const parsedMenus = menuData.map((menu: any) => {
+          // Parse quantity - handle 0 as valid value, not undefined
+          let parsedQuantity: number | undefined = undefined;
+          if (menu.quantity !== null && menu.quantity !== undefined && menu.quantity !== '') {
+            parsedQuantity = typeof menu.quantity === 'string' ? parseInt(menu.quantity, 10) : Number(menu.quantity);
+            // If parsing results in NaN, set to undefined
+            if (isNaN(parsedQuantity)) {
+              parsedQuantity = undefined;
+            }
+          }
+          
+          return {
+            id: menu.id || `menu-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+            name: menu.name || '',
+            description: menu.description || '',
+            price: typeof menu.price === 'string' ? parseInt(menu.price, 10) : (menu.price || 0),
+            available: menu.available === true || menu.available === 'true' || menu.available === 'TRUE',
+            image: menu.image || '',
+            quantity: parsedQuantity,
+          };
+        });
         // Replace all menus in state with fresh data from API
         setMenus(parsedMenus);
         console.log('Menus loaded successfully:', parsedMenus.length, parsedMenus);

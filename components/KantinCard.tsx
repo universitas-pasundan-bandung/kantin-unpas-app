@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { KantinAccount } from '@/lib/kantin';
@@ -11,60 +11,10 @@ interface KantinCardProps {
 
 export default function KantinCard({ kantin }: KantinCardProps) {
   const [imageError, setImageError] = useState(false);
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
-
-  // Extract file ID from Google Drive URL and create alternative URLs
-  const getImageUrl = (url: string): string => {
-    if (!url) return '';
-    
-    // If it's already a Google Drive uc?id URL, use it directly
-    if (url.includes('drive.google.com/uc?id=')) {
-      return url;
-    }
-    
-    // Extract file ID from various Google Drive URL formats
-    const idMatch = url.match(/[\/=]([a-zA-Z0-9_-]{25,})/);
-    if (idMatch) {
-      const fileId = idMatch[1];
-      return `https://drive.google.com/uc?id=${fileId}`;
-    }
-    
-    return url;
-  };
-
-  // Try alternative URL format if main URL fails
-  const getAlternativeUrl = (url: string): string | null => {
-    if (!url) return null;
-    
-    const idMatch = url.match(/[\/=]([a-zA-Z0-9_-]{25,})/);
-    if (idMatch) {
-      const fileId = idMatch[1];
-      // Try thumbnail format as fallback
-      return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
-    }
-    
-    return null;
-  };
-
-  useEffect(() => {
-    if (kantin.coverImage) {
-      setImageSrc(getImageUrl(kantin.coverImage));
-      setImageError(false);
-    }
-  }, [kantin.coverImage]);
 
   const handleImageError = () => {
     console.error('Error loading cover image for kantin:', kantin.name, kantin.coverImage);
-    
-    // Try alternative URL format
-    const altUrl = getAlternativeUrl(kantin.coverImage || '');
-    if (altUrl && imageSrc !== altUrl) {
-      console.log('Trying alternative URL format:', altUrl);
-      setImageSrc(altUrl);
-      setImageError(false);
-    } else {
-      setImageError(true);
-    }
+    setImageError(true);
   };
 
   return (
@@ -73,9 +23,9 @@ export default function KantinCard({ kantin }: KantinCardProps) {
       className="block bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden"
     >
       <div className="h-48 bg-gradient-to-br from-unpas-blue/20 to-unpas-gold/20 flex items-center justify-center overflow-hidden relative">
-        {imageSrc && !imageError ? (
+        {kantin.coverImage && !imageError ? (
           <Image 
-            src={imageSrc} 
+            src={kantin.coverImage} 
             alt={kantin.name} 
             fill
             className="object-cover"
@@ -84,7 +34,6 @@ export default function KantinCard({ kantin }: KantinCardProps) {
             onLoad={() => {
               console.log('Cover image loaded successfully for kantin:', kantin.name);
             }}
-            unoptimized={imageSrc.includes('drive.google.com')}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
