@@ -3,11 +3,18 @@
 interface FloatingWhatsAppButtonProps {
   phoneNumber: string | number | null | undefined;
   kantinName?: string;
-  hasCart?: boolean; // Whether cart is visible (mobile)
+  hasCart?: boolean; // Whether cart badge is visible (mobile)
+  disableWhenCartOpen?: boolean; // Hide when cart collapse is open
 }
 
-export default function FloatingWhatsAppButton({ phoneNumber, kantinName, hasCart = false }: FloatingWhatsAppButtonProps) {
+export default function FloatingWhatsAppButton({
+  phoneNumber,
+  kantinName,
+  hasCart = false,
+  disableWhenCartOpen = false,
+}: FloatingWhatsAppButtonProps) {
   if (!phoneNumber) return null;
+  if (disableWhenCartOpen) return null;
 
   // Format phone number: remove any non-digit characters except +
   const formatPhoneNumber = (phone: string | number): string => {

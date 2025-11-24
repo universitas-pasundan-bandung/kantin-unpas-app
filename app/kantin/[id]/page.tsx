@@ -259,8 +259,8 @@ export default function KantinDetailPage() {
             )}
           </div>
 
-          {/* Desktop Cart */}
-          <div className="hidden lg:block lg:col-span-1 order-1 lg:order-2">
+          {/* Desktop/Tablet Cart */}
+          <div className="hidden md:block md:col-span-1 order-1 md:order-2">
             <div className="bg-white rounded-xl shadow-md p-6 sticky top-20">
               <h3 className="text-xl font-bold text-gray-800 mb-4 sm:mb-6">Keranjang</h3>
               {cartCount === 0 ? (
@@ -312,7 +312,7 @@ export default function KantinDetailPage() {
 
         {/* Mobile Cart - Sticky Bottom */}
         {cartCount > 0 && (
-          <div className="lg:hidden fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40">
+          <div className="md:hidden fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40">
             <button
               onClick={() => setIsCartOpen(!isCartOpen)}
               className="w-full px-4 py-3 flex items-center justify-between bg-unpas-blue text-white"
@@ -422,6 +422,7 @@ export default function KantinDetailPage() {
         phoneNumber={kantin?.whatsapp} 
         kantinName={kantin?.name}
         hasCart={cartCount > 0}
+        disableWhenCartOpen={isCartOpen}
       />
     </div>
   );
