@@ -82,10 +82,10 @@ export async function fetchFromGoogleScript<T>(
       }
       
       // Check if response has success field (for POST requests)
-      if (result.success === true && result.data) {
+      if (result.success === true) {
         return {
           success: true,
-          data: result
+          data: result.data ? result : undefined
         };
       }
       
@@ -320,6 +320,19 @@ export async function updateKantinInSuperAdminSheet(kantinId: string, kantin: an
     action: 'update',
     id: kantinId,
     data: kantin
+  });
+}
+
+export async function deleteKantinFromSuperAdminSheet(kantinId: string) {
+  if (!SUPER_ADMIN_SCRIPT_URL) {
+    return {
+      success: false,
+      error: 'Super Admin Google Script URL is not configured'
+    };
+  }
+  return fetchFromGoogleScript(SUPER_ADMIN_SCRIPT_URL, 'AkunKantin', 'POST', {
+    action: 'delete',
+    id: kantinId
   });
 }
 

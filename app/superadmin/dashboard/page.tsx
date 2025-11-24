@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { auth } from '@/lib/auth';
 import { kantinStorage, KantinAccount, OperatingHours } from '@/lib/kantin';
-import { saveKantinToSuperAdminSheet, updateKantinInSuperAdminSheet, getKantinsFromSuperAdminSheet } from '@/lib/googleScript';
+import { saveKantinToSuperAdminSheet, updateKantinInSuperAdminSheet, getKantinsFromSuperAdminSheet, deleteKantinFromSuperAdminSheet } from '@/lib/googleScript';
 import KantinFormModal from '@/components/KantinFormModal';
 import { showAlert } from '@/lib/swal';
 import { LuTrash2 } from 'react-icons/lu';
@@ -198,6 +198,18 @@ export default function SuperAdminDashboardPage() {
     });
     setKantins(sortedKantins);
     showAlert.success('Akun kantin berhasil dihapus!');
+
+    // Hit delete API in the background (non-blocking)
+    deleteKantinFromSuperAdminSheet(id).then((response) => {
+      console.log('Response from delete API:', response);
+      if (response.success === false) {
+        console.error('Failed to delete kantin from Google Sheets:', response.error);
+        showAlert.warning('Akun kantin sudah dihapus secara lokal, tetapi gagal menghapus dari Google Sheets. Silakan coba lagi nanti.');
+      }
+    }).catch((error) => {
+      console.error('Error deleting kantin from Google Sheets:', error);
+      showAlert.warning('Akun kantin sudah dihapus secara lokal, tetapi gagal menghapus dari Google Sheets. Silakan coba lagi nanti.');
+    });
   };
 
   return (
