@@ -83,7 +83,7 @@ export default function KantinLoginPage() {
 
     try {
       // Hit API route (server-side, password tidak terlihat di network browser)
-      const response = await fetch('/api/auth/superadmin/login', {
+      const response = await fetch('/api/auth/admin/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -103,7 +103,7 @@ export default function KantinLoginPage() {
         role: 'superadmin',
         username: result.data.username,
       });
-      router.push('/superadmin/dashboard');
+      router.push('/admin/dashboard');
     } catch (error) {
       console.error('Login error:', error);
       setError('Terjadi kesalahan saat login. Silakan coba lagi.');
