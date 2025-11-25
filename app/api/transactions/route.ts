@@ -63,9 +63,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Get transactions array
+    const transactions = result.data?.data || [];
+
+    // Sort by createdAt (newest first)
+    const sortedTransactions = transactions.sort((a: any, b: any) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA; // Descending order (newest first)
+    });
+
     return NextResponse.json({
       success: true,
-      data: result.data?.data || []
+      data: sortedTransactions
     });
   } catch (error) {
     return NextResponse.json(

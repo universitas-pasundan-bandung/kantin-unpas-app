@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth';
 import { showAlert } from '@/lib/swal';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Header from '@/components/Header';
+import { FaExclamationCircle } from 'react-icons/fa';
 
 function ProcessOrderContent() {
   const router = useRouter();
@@ -90,8 +91,10 @@ function ProcessOrderContent() {
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           {isProcessing ? (
-            <div className="text-center">
+            <div className="flex flex-col items-center justify-center w-full">
+              <div className="flex items-center justify-center w-full">
               <LoadingSpinner size="lg" className="mx-auto mb-4" />
+              </div>
               <h2 className="text-xl font-semibold text-gray-800 mb-2">
                 Sedang mengubah status...
               </h2>
@@ -102,19 +105,7 @@ function ProcessOrderContent() {
           ) : error ? (
             <div className="text-center">
               <div className="text-red-500 mb-4">
-                <svg
-                  className="w-16 h-16 mx-auto"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+                <FaExclamationCircle className="w-16 h-16 mx-auto" />
               </div>
               <h2 className="text-xl font-semibold text-gray-800 mb-2">
                 Gagal mengubah status
